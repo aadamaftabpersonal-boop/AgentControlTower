@@ -14,6 +14,11 @@
 3. A deliberately malformed/partial checkpoint record is handled as `INSUFFICIENT EVIDENCE`, never silently dropped or filled with invented values
 4. Existing `/health`, `/version` routes still work unchanged
 
+**Plans:** 1 plan
+
+Plans:
+- [ ] 01-01-PLAN.md — Tracer-first ingestion slice: pending checkpoints → normalized `Checkpoint` model → `/api/checkpoints`, with explicit `WAITING FOR AGENT ACTIVITY` / `INSUFFICIENT EVIDENCE` states
+
 ## Phase 2: Agent Registry & Read APIs
 **Goal:** Backend maintains live Agent state derived from ingested checkpoints and exposes it over HTTP.
 **Mode:** mvp
