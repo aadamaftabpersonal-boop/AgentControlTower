@@ -1,0 +1,191 @@
+merge all the branches to main
+
+---
+
+can you take context from the other brnaches
+
+---
+
+the checkpoint data is stored in a seperate branch and hence not accessible from main. even if i manually run the entire checkpoint list command they are not showing in main branch
+
+---
+
+run the backend
+
+---
+
+make a function in frontend and backend that takes a repo url/folder as input and shows all the checkpoint of that repo instead of our own
+
+---
+
+push this to github
+
+---
+
+give commads to run this from terminal
+
+---
+
+give commads to run this from terminal, just give commads
+
+---
+
+linux commands pls]
+
+---
+
+continue building the product, theres an error it is showing unkown agents too like claude code and codex are showing but there are unkown agents shown too not an error, add when i click on the checkpoint, it shows the checkpoint summary. also add a feature when i click on a checkpoint it returns a prompt that can recreate the repo upto that checkpoint
+
+---
+
+add when i click on the checkpoint, it shows the checkpoint summary. also add a feature when i click on a checkpoint it returns a prompt that can recreate the repo upto that checkpoint
+
+---
+
+push this to github, make this feature where only show the session activity for the repo i have given not and donot fallback and donot show checkpoints of this repo
+
+---
+
+push the previous changes to github pleaseee
+
+---
+
+<task-notification>
+<task-id>a9dbf81a950caa2ff</task-id>
+<tool-use-id>toolu_01HHFstdqKpWHumpP9RLvar8</tool-use-id>
+<output-file>C:\Users\KASHIS~1\AppData\Local\Temp\claude\C--Users-Kashish-Gandhi-AgentControlTower\24fae36e-dee8-44ce-b9e5-6b0b3bea40ae\tasks\a9dbf81a950caa2ff.output</output-file>
+<status>completed</status>
+<summary>Agent "Commit repo-isolation fix and push to GitHub" finished</summary>
+<note>A task-notification fires each time this agent stops with no live background children of its own. The user can send it another message and resume it, so the same task-id may notify more than once.</note>
+<result>Pushed successfully to origin/main (`fbbc32af8..73a20086f`).
+
+**Report:**
+- Backend: 57/57 tests pass
+- Frontend: builds clean, no TS errors
+- Commit: `73a20086f` — "Add repo_root transparency to prove no silent fallback in repo-scoping" (5 files changed, 1 new test file)
+- Push: succeeded to `github.com/aadamaftabpersonal-boop/AgentControlTower.git` main branch
+
+Note out of scope: two earlier commits from the parent conversation (`fbbc32af8` and one prior) were already ahead of origin and got pushed along with this one in the same push — that's expected, not an issue.</result>
+<usage><subagent_tokens>577202</subagent_tokens><tool_uses>6</tool_uses><duration_ms>89934</duration_ms></usage>
+</task-notification>
+
+---
+
+fork another operatioon, we have make a build.md file for submission # Claude Code Prompt - Generate BUILDATHON.md
+
+We need to create the final BUILDATHON.md for the Agent Control Tower hackathon submission.
+
+## Your task
+
+Inspect the actual repository, implementation, Entire Checkpoints, Entire Graph findings, commits, tests, README/docs, and any available hackathon artifacts.
+
+Then create:
+
+BUILDATHON.md
+
+This document must describe what was actually built and verified.
+
+Do NOT write an aspirational document based on the roadmap.
+
+Do NOT claim that a feature exists unless you can verify it from the repository, commits, tests, or Entire evidence.
+
+Do NOT invent checkpoint links, Graph findings, Databricks behavior, test results, or implementation details.
+
+If something required by the outline was not completed or cannot be verified, explicitly say so.
+
+---
+
+# Required BUILDATHON.md structure
+
+Use exactly this high-level structure:
+
+# Project name
+
+Give the final project name.
+
+## One-sentence summary
+
+Explain Agent Control Tower in one strong sentence.
+
+Focus on the core value:
+
+- multiple AI coding agents
+- live visibility
+- Entire Checkpoints as the source of truth
+- understanding what agents actually did
+- ability to recover/continue work from checkpoint context
+
+Keep this concise.
+
+## Problem, intended user and why it matters
+
+Explain:
+
+1. The problem being solved.
+2. Who the intended users are.
+3. Why this problem matters when multiple AI coding agents operate in parallel.
+4. Why ordinary agent output/status is insufficient.
+5. How Agent Control Tower addresses this.
+
+Ground the description in the actual implemented product.
+
+## Selected Entire track and why Entire is essential
+
+Identify the selected Entire hackathon track.
+
+Explain why Entire is not merely an integration or data source.
+
+Explain specifically how the product depends on:
+
+- Entire Checkpoints
+- checkpoint context
+- checkpoint history/state
+- commits where applicable
+- Entire Graph where actually used
+
+Make the argument:
+
+> The product's understanding of agent work is grounded in development evidence captured by Entire rather than being based solely on what an agent claims it did.
+
+Only make claims that are supported by the implementation.
+
+## Architecture and main workflow
+
+Describe the actual architecture.
+
+Include, where applicable:
+
+- Electron application
+- frontend
+- backend/local services
+- Entire CLI
+- Checkpoint ingestion
+- Agent registry/state
+- LLM reasoning
+- Entire Graph
+- Databricks
+- checkpoint reconstruction
+- handoff prompt generation
+
+Describe the actual data flow.
+
+Prefer a compact architecture diagram in Markdown if useful.
+
+For example:
+
+```text
+Entire CLI
+    ↓
+Checkpoints
+    ↓
+Checkpoint Parser / Normalizer
+    ↓
+Agent Registry
+    ↓
+Agent Control Tower
+    ↓
+LLM / Graph Evidence
+    ↓
+Diagnosis / Explanation
+    ↓
+Handoff or Reconstruction Prompt
