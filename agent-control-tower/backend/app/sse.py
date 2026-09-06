@@ -16,6 +16,7 @@ from pathlib import Path
 from fastapi.responses import StreamingResponse
 
 from app import normalizer, registry
+from app.models import LiveState
 
 POLL_INTERVAL_SECONDS = 4.0
 
@@ -37,17 +38,23 @@ async def _event_generator(repo_root: Path | None):
             # doesn't change mid-connection.
             result = await asyncio.to_thread(normalizer.ingest_checkpoints, repo_root)
             reg = registry.build_agent_registry(result)
+            state = LiveState(
+                status=reg.status,
+                agents=reg.agents,
+                checkpoints=result.checkpoints,
+                notes=reg.notes,
+            )
             new_ids = {cp.checkpoint_id for cp in result.checkpoints if cp.checkpoint_id}
 
             if first:
-                yield f"event: snapshot\ndata: {reg.model_dump_json()}\n\n"
+                yield f"event: snapshot\ndata: {state.model_dump_json()}\n\n"
                 seen_checkpoint_ids = new_ids
                 first = False
             else:
                 added = new_ids - seen_checkpoint_ids
                 if added:
                     seen_checkpoint_ids = new_ids
-                    yield f"event: update\ndata: {reg.model_dump_json()}\n\n"
+                    yield f"event: update\ndata: {state.model_dump_json()}\n\n"
         except Exception as exc:  # noqa: BLE001 — degrade the stream, never kill it (LIVE-02)
             yield f"event: error\ndata: {json.dumps({'detail': str(exc)})}\n\n"
 

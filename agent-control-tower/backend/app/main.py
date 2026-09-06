@@ -1,9 +1,9 @@
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 
-from app import entire_client, normalizer, registry
+from app import entire_client, normalizer, reconstruction, registry
 from app.config import settings
-from app.models import AgentRegistryResult, IngestionResult
+from app.models import AgentRegistryResult, Checkpoint, IngestionResult, ReconstructionPrompt
 from app.repos import RepoResolutionError, resolve_repo_root
 from app.sse import stream_agent_events
 
@@ -59,3 +59,29 @@ def agents(repo: str | None = RepoParam) -> AgentRegistryResult:
 async def events(repo: str | None = RepoParam):
     repo_root = _resolve_repo(repo)
     return await stream_agent_events(repo_root=repo_root)
+
+
+def _get_checkpoint_or_404(checkpoint_id: str, repo: str | None) -> Checkpoint:
+    cp = normalizer.get_checkpoint(checkpoint_id, repo_root=_resolve_repo(repo))
+    if cp is None:
+        raise HTTPException(
+            status_code=404,
+            detail=(
+                f"checkpoint {checkpoint_id!r} not found in the current pending list "
+                "(it may have condensed/committed since the dashboard last polled, "
+                "or never existed in this repo)"
+            ),
+        )
+    return cp
+
+
+@app.get("/api/checkpoints/{checkpoint_id}")
+def checkpoint_detail(checkpoint_id: str, repo: str | None = RepoParam) -> Checkpoint:
+    """Full detail for one checkpoint, force-enriched regardless of the bulk-list cap."""
+    return _get_checkpoint_or_404(checkpoint_id, repo)
+
+
+@app.get("/api/checkpoints/{checkpoint_id}/reconstruction-prompt")
+def checkpoint_reconstruction_prompt(checkpoint_id: str, repo: str | None = RepoParam) -> ReconstructionPrompt:
+    cp = _get_checkpoint_or_404(checkpoint_id, repo)
+    return reconstruction.build_reconstruction_prompt(cp)

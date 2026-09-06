@@ -192,6 +192,49 @@ def enrich_checkpoint(cp: Checkpoint, envelope: dict) -> Checkpoint:
     )
 
 
+def _enrich_with_error_isolation(cp: Checkpoint, repo_root: Path | None) -> Checkpoint:
+    """Enrich one checkpoint via `explain --json`, isolating a per-entry failure.
+
+    Shared by the bulk `ingest_checkpoints` fan-out and the on-demand
+    `get_checkpoint` lookup, so both paths degrade the same way: a failed
+    explain call marks only this checkpoint INSUFFICIENT_EVIDENCE with the
+    error text as a note, never raises out to the caller.
+    """
+    try:
+        envelope = entire_client.explain_checkpoint(cp.condensation_id, repo_root=repo_root)
+        return enrich_checkpoint(cp, envelope)
+    except EntireCommandError as exc:
+        return cp.model_copy(
+            update={
+                "evidence_status": EvidenceStatus.INSUFFICIENT_EVIDENCE,
+                "evidence_notes": [*cp.evidence_notes, str(exc)],
+            }
+        )
+
+
+def get_checkpoint(checkpoint_id: str, repo_root: Path | None = None) -> Checkpoint | None:
+    """Look up one checkpoint by ID and force-enrich it, bypassing MAX_ENRICHMENT_CALLS.
+
+    The bulk list caps enrichment for dashboard-load speed (see
+    MAX_ENRICHMENT_CALLS); a user clicking one specific checkpoint asked for
+    exactly one explain call, which is cheap on its own regardless of how
+    many other checkpoints exist. Returns None if no pending entry matches
+    `checkpoint_id` -- it may have condensed/committed since the pending
+    list was last read, or never existed; the caller (the API route)
+    decides how to surface that as 404 rather than this function
+    inventing a placeholder result.
+    """
+    entries = entire_client.list_pending_checkpoints(repo_root=repo_root)
+    for entry in entries:
+        cp = normalize_pending_entry(entry)
+        if cp.checkpoint_id != checkpoint_id:
+            continue
+        if not is_enrichable(cp):
+            return cp
+        return _enrich_with_error_isolation(cp, repo_root)
+    return None
+
+
 def ingest_checkpoints(repo_root: Path | None = None) -> IngestionResult:
     """Read the pending checkpoint dataset and normalize it into a result.
 
@@ -240,16 +283,7 @@ def ingest_checkpoints(repo_root: Path | None = None) -> IngestionResult:
 
     def _enrich_one(item: tuple[int, Checkpoint]) -> tuple[int, Checkpoint]:
         idx, cp = item
-        try:
-            envelope = entire_client.explain_checkpoint(cp.condensation_id, repo_root=repo_root)
-            return idx, enrich_checkpoint(cp, envelope)
-        except EntireCommandError as exc:
-            return idx, cp.model_copy(
-                update={
-                    "evidence_status": EvidenceStatus.INSUFFICIENT_EVIDENCE,
-                    "evidence_notes": [*cp.evidence_notes, str(exc)],
-                }
-            )
+        return idx, _enrich_with_error_isolation(cp, repo_root)
 
     # Each explain call is a separate `entire` subprocess and mostly waits on
     # I/O, so running them concurrently (bounded by MAX_ENRICHMENT_CALLS,

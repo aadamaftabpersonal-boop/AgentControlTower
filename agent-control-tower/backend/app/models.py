@@ -128,3 +128,38 @@ class AgentRegistryResult(BaseModel):
     status: IngestionStatus
     agents: list[Agent] = []
     notes: list[str] = []
+
+
+class LiveState(BaseModel):
+    """Combined SSE payload: the agent registry plus the raw checkpoint list.
+
+    Built from a single `ingest_checkpoints()` call so the live stream never
+    pays for two CLI round-trips per poll tick just to give the frontend
+    both the collapsed agent view and the per-checkpoint list to render
+    clickable checkpoints under each agent.
+    """
+
+    status: IngestionStatus
+    agents: list[Agent] = []
+    checkpoints: list[Checkpoint] = []
+    notes: list[str] = []
+
+
+class ReconstructionPrompt(BaseModel):
+    """Self-contained continuation prompt generated from one checkpoint.
+
+    This is a lightweight version of the PRD's V7 hero feature (full
+    historical-cutoff reconstruction, filtering out any fact first
+    introduced by a later checkpoint) -- that needs a real timeline query
+    this V1 ingestion layer doesn't build. What's here instead: a prompt
+    assembled entirely from this ONE checkpoint's own fields, so it can
+    never leak later-checkpoint facts (there are none in scope to leak),
+    with every field it couldn't source named explicitly rather than
+    invented. Always UNVERIFIED per the PRD's V7 contract -- no replay
+    fidelity check exists at any scope yet.
+    """
+
+    checkpoint_id: str
+    prompt: str
+    verification_status: str = "UNVERIFIED"
+    warnings: list[str] = []
