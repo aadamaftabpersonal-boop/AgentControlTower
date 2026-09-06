@@ -14,6 +14,11 @@ def health() -> dict:
     }
 
 
+@app.get("/version")
+def version() -> dict:
+    return {"version": "0.1.0"}
+
+
 @app.get("/api/checkpoints")
 def checkpoints() -> list[dict]:
     return entire_client.list_checkpoints()
