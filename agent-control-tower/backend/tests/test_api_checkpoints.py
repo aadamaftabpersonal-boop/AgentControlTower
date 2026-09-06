@@ -31,7 +31,7 @@ def test_version_still_unchanged():
 
 def test_checkpoints_returns_json_object_not_bare_array(monkeypatch):
     fixture = _load_fixture("pending_live.json")
-    monkeypatch.setattr(entire_client, "list_pending_checkpoints", lambda: fixture)
+    monkeypatch.setattr(entire_client, "list_pending_checkpoints", lambda **_: fixture)
 
     response = client.get("/api/checkpoints")
 
@@ -46,7 +46,7 @@ def test_checkpoints_returns_json_object_not_bare_array(monkeypatch):
 
 def test_checkpoints_normalizes_live_pending_entry(monkeypatch):
     fixture = _load_fixture("pending_live.json")
-    monkeypatch.setattr(entire_client, "list_pending_checkpoints", lambda: fixture)
+    monkeypatch.setattr(entire_client, "list_pending_checkpoints", lambda **_: fixture)
 
     response = client.get("/api/checkpoints")
 
@@ -60,7 +60,7 @@ def test_checkpoints_normalizes_live_pending_entry(monkeypatch):
 
 
 def test_checkpoints_returns_waiting_for_agent_activity_when_empty(monkeypatch):
-    monkeypatch.setattr(entire_client, "list_pending_checkpoints", lambda: [])
+    monkeypatch.setattr(entire_client, "list_pending_checkpoints", lambda **_: [])
 
     response = client.get("/api/checkpoints")
 

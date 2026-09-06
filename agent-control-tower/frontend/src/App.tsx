@@ -23,6 +23,18 @@ interface AgentRegistryResult {
 
 type ConnectionState = 'connecting' | 'live' | 'disconnected'
 
+function eventsUrl(repo: string) {
+  const url = new URL('/api/events', API_BASE)
+  if (repo.trim()) url.searchParams.set('repo', repo.trim())
+  return url.toString()
+}
+
+function agentsUrl(repo: string) {
+  const url = new URL('/api/agents', API_BASE)
+  if (repo.trim()) url.searchParams.set('repo', repo.trim())
+  return url.toString()
+}
+
 function AgentNode({ agent }: { agent: Agent }) {
   return (
     <div className="agent-node">
@@ -56,14 +68,75 @@ function WaitingState() {
   )
 }
 
+function RepoTargetForm({
+  onLoad,
+  loading,
+  activeRepoLabel,
+}: {
+  onLoad: (target: string) => void
+  loading: boolean
+  activeRepoLabel: string
+}) {
+  const [value, setValue] = useState('')
+
+  return (
+    <form
+      className="repo-form"
+      onSubmit={(e) => {
+        e.preventDefault()
+        onLoad(value)
+      }}
+    >
+      <input
+        type="text"
+        placeholder="Local folder path or git URL — leave empty for this repo"
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        disabled={loading}
+      />
+      <button type="submit" disabled={loading}>
+        {loading ? 'Loading…' : 'Load repo'}
+      </button>
+      <span className="active-repo-label">Showing: {activeRepoLabel}</span>
+    </form>
+  )
+}
+
 function App() {
   const [registry, setRegistry] = useState<AgentRegistryResult | null>(null)
   const [connection, setConnection] = useState<ConnectionState>('connecting')
   const [error, setError] = useState<string | null>(null)
+  const [repo, setRepo] = useState('')
+  const [repoLoading, setRepoLoading] = useState(false)
+  const [repoError, setRepoError] = useState<string | null>(null)
   const sourceRef = useRef<EventSource | null>(null)
 
+  const handleLoadRepo = async (target: string) => {
+    setRepoLoading(true)
+    setRepoError(null)
+    try {
+      // Validate the target against a fast non-streaming route first: an
+      // EventSource that fails to open (wrong content-type, 4xx) can't
+      // surface the actual error body to us, so a plain fetch here is what
+      // lets a bad path/URL show a real message instead of a silent
+      // "disconnected" badge.
+      const response = await fetch(agentsUrl(target))
+      if (!response.ok) {
+        const body = await response.json().catch(() => null)
+        throw new Error(body?.detail ?? `Request failed with ${response.status}`)
+      }
+      setRegistry(null)
+      setConnection('connecting')
+      setRepo(target)
+    } catch (err) {
+      setRepoError(err instanceof Error ? err.message : 'Failed to load repo')
+    } finally {
+      setRepoLoading(false)
+    }
+  }
+
   useEffect(() => {
-    const source = new EventSource(`${API_BASE}/api/events`)
+    const source = new EventSource(eventsUrl(repo))
     sourceRef.current = source
 
     const applyRegistry = (raw: string) => {
@@ -92,7 +165,7 @@ function App() {
     source.onopen = () => setConnection((prev) => (prev === 'disconnected' ? 'live' : prev))
 
     return () => source.close()
-  }, [])
+  }, [repo])
 
   return (
     <div className="control-tower">
@@ -105,6 +178,9 @@ function App() {
         </span>
       </header>
 
+      <RepoTargetForm onLoad={handleLoadRepo} loading={repoLoading} activeRepoLabel={repo.trim() || '(this repo)'} />
+
+      {repoError && <div className="error-banner">Couldn't load that repo: {repoError}</div>}
       {error && <div className="error-banner">Backend error: {error}</div>}
 
       <main>

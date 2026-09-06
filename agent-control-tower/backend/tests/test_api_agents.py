@@ -17,7 +17,7 @@ def _load_fixture(name: str) -> list[dict]:
 
 def test_agents_returns_one_agent_for_one_live_checkpoint(monkeypatch):
     fixture = _load_fixture("pending_live.json")
-    monkeypatch.setattr(entire_client, "list_pending_checkpoints", lambda: fixture)
+    monkeypatch.setattr(entire_client, "list_pending_checkpoints", lambda **_: fixture)
 
     response = client.get("/api/agents")
 
@@ -29,7 +29,7 @@ def test_agents_returns_one_agent_for_one_live_checkpoint(monkeypatch):
 
 
 def test_agents_reports_waiting_for_agent_activity_with_no_checkpoints(monkeypatch):
-    monkeypatch.setattr(entire_client, "list_pending_checkpoints", lambda: [])
+    monkeypatch.setattr(entire_client, "list_pending_checkpoints", lambda **_: [])
 
     response = client.get("/api/agents")
 
@@ -40,7 +40,7 @@ def test_agents_reports_waiting_for_agent_activity_with_no_checkpoints(monkeypat
 
 
 def test_cors_headers_present_for_vite_dev_origin(monkeypatch):
-    monkeypatch.setattr(entire_client, "list_pending_checkpoints", lambda: [])
+    monkeypatch.setattr(entire_client, "list_pending_checkpoints", lambda **_: [])
 
     response = client.get("/api/agents", headers={"Origin": "http://localhost:5174"})
 

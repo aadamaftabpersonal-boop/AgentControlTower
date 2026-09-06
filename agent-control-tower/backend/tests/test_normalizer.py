@@ -78,11 +78,11 @@ def test_ingest_checkpoints_enriches_only_the_condensed_entry(monkeypatch):
     fixture = _load_fixture("pending_condensed.json")
     calls = []
 
-    def fake_explain(checkpoint_id):
+    def fake_explain(checkpoint_id, **_):
         calls.append(checkpoint_id)
         return FULL_ENVELOPE
 
-    monkeypatch.setattr(normalizer.entire_client, "list_pending_checkpoints", lambda: fixture)
+    monkeypatch.setattr(normalizer.entire_client, "list_pending_checkpoints", lambda **_: fixture)
     monkeypatch.setattr(normalizer.entire_client, "explain_checkpoint", fake_explain)
 
     result = ingest_checkpoints()
@@ -101,10 +101,10 @@ def test_flag_like_condensation_id_never_reaches_explain(monkeypatch):
     fixture = [dict(fixture[0]), dict(fixture[1])]
     fixture[1]["condensation_id"] = "--force"
 
-    def fake_explain(checkpoint_id):
+    def fake_explain(checkpoint_id, **_):
         raise AssertionError("explain_checkpoint must not be called for an unsafe ID")
 
-    monkeypatch.setattr(normalizer.entire_client, "list_pending_checkpoints", lambda: fixture)
+    monkeypatch.setattr(normalizer.entire_client, "list_pending_checkpoints", lambda **_: fixture)
     monkeypatch.setattr(normalizer.entire_client, "explain_checkpoint", fake_explain)
 
     result = ingest_checkpoints()
@@ -112,7 +112,7 @@ def test_flag_like_condensation_id_never_reaches_explain(monkeypatch):
 
 
 def test_ingest_checkpoints_empty_pending_list_returns_waiting_for_agent_activity(monkeypatch):
-    monkeypatch.setattr(normalizer.entire_client, "list_pending_checkpoints", lambda: [])
+    monkeypatch.setattr(normalizer.entire_client, "list_pending_checkpoints", lambda **_: [])
 
     result = ingest_checkpoints()
 
@@ -198,12 +198,12 @@ def test_per_entry_explain_failure_is_isolated(monkeypatch):
         },
     ]
 
-    def fake_explain(checkpoint_id):
+    def fake_explain(checkpoint_id, **_):
         if checkpoint_id == "cond-1":
             raise EntireCommandError(["checkpoint", "explain", "cond-1"], 1, "boom")
         return FULL_ENVELOPE
 
-    monkeypatch.setattr(normalizer.entire_client, "list_pending_checkpoints", lambda: entries)
+    monkeypatch.setattr(normalizer.entire_client, "list_pending_checkpoints", lambda **_: entries)
     monkeypatch.setattr(normalizer.entire_client, "explain_checkpoint", fake_explain)
 
     result = ingest_checkpoints()
@@ -215,7 +215,7 @@ def test_per_entry_explain_failure_is_isolated(monkeypatch):
 
 
 def test_list_pending_checkpoints_error_propagates(monkeypatch):
-    def raise_error():
+    def raise_error(**_):
         raise EntireCommandError(["checkpoint", "list", "--pending"], 1, "boom")
 
     monkeypatch.setattr(normalizer.entire_client, "list_pending_checkpoints", raise_error)
@@ -242,8 +242,8 @@ def test_enrichment_cap_leaves_overflow_list_only_with_note(monkeypatch):
             }
         )
 
-    monkeypatch.setattr(normalizer.entire_client, "list_pending_checkpoints", lambda: entries)
-    monkeypatch.setattr(normalizer.entire_client, "explain_checkpoint", lambda cid: FULL_ENVELOPE)
+    monkeypatch.setattr(normalizer.entire_client, "list_pending_checkpoints", lambda **_: entries)
+    monkeypatch.setattr(normalizer.entire_client, "explain_checkpoint", lambda cid, **_: FULL_ENVELOPE)
 
     result = ingest_checkpoints()
 

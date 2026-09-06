@@ -15,6 +15,7 @@ predicate rather than re-testing `condensation_id` itself.
 import re
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
+from pathlib import Path
 
 from app import entire_client
 from app.entire_client import EntireCommandError
@@ -34,8 +35,15 @@ UNAVAILABLE_FIELDS = ("transcript", "tool_calls", "commits")
 # Bounds the explain-enrichment fan-out. `run_json` uses a 30s timeout and
 # the CLI caps the pending list at 20 entries (`pendingCheckpointsLimit`), so
 # an unbounded enrichment loop is a 600s worst-case hang on a route a live
-# dashboard polls (threat T-01-03).
-MAX_ENRICHMENT_CALLS = 10
+# dashboard polls (threat T-01-03). Even parallelized (see ThreadPoolExecutor
+# below), each explain call is a full `entire.exe` process spawn, which has
+# real per-process overhead on Windows; against this repo's actual history
+# (20+ pending entries) a cap of 10 still pushed first paint past 20-30s.
+# Lowered to 3: the dashboard's headline fields (objective, current_activity)
+# already come from list-level data via normalize_pending_entry, so
+# enrichment only adds files_touched/sessions detail for the most recent
+# entries -- a demo-time latency tradeoff, not a correctness one.
+MAX_ENRICHMENT_CALLS = 3
 
 # A checkpoint ID read from CLI stdout becomes argv of another CLI
 # invocation. An ID beginning with `-` would be parsed by Cobra as a flag,
@@ -184,8 +192,12 @@ def enrich_checkpoint(cp: Checkpoint, envelope: dict) -> Checkpoint:
     )
 
 
-def ingest_checkpoints() -> IngestionResult:
+def ingest_checkpoints(repo_root: Path | None = None) -> IngestionResult:
     """Read the pending checkpoint dataset and normalize it into a result.
+
+    `repo_root` overrides which repo's checkpoints get read (see
+    `app.repos.resolve_repo_root`); omitted, it falls back to
+    `entire_client`'s own default (the backend's configured `ACT_REPO_ROOT`).
 
     Per D-04, `EntireCommandError`, `FileNotFoundError`, and
     `subprocess.TimeoutExpired` raised by `list_pending_checkpoints` are
@@ -195,7 +207,7 @@ def ingest_checkpoints() -> IngestionResult:
     `INSUFFICIENT_EVIDENCE`). A per-entry `explain_checkpoint` failure is
     isolated instead and does not abort the whole ingestion.
     """
-    entries = entire_client.list_pending_checkpoints()
+    entries = entire_client.list_pending_checkpoints(repo_root=repo_root)
 
     if not entries:
         return IngestionResult(
@@ -229,7 +241,7 @@ def ingest_checkpoints() -> IngestionResult:
     def _enrich_one(item: tuple[int, Checkpoint]) -> tuple[int, Checkpoint]:
         idx, cp = item
         try:
-            envelope = entire_client.explain_checkpoint(cp.condensation_id)
+            envelope = entire_client.explain_checkpoint(cp.condensation_id, repo_root=repo_root)
             return idx, enrich_checkpoint(cp, envelope)
         except EntireCommandError as exc:
             return idx, cp.model_copy(

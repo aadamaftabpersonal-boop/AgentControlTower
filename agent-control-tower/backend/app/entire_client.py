@@ -8,6 +8,7 @@ here interprets or reshapes the data, that's the normalizer's job.
 
 import json
 import subprocess
+from pathlib import Path
 
 from app.config import settings
 
@@ -20,8 +21,12 @@ class EntireCommandError(RuntimeError):
         self.stderr = stderr
 
 
-def run_json(args: list[str], allow_nonzero_exit: bool = False) -> dict | list:
-    """Run `entire <args...> --json` in the configured repo and decode stdout.
+def run_json(args: list[str], allow_nonzero_exit: bool = False, repo_root: Path | None = None) -> dict | list:
+    """Run `entire <args...> --json` in the target repo and decode stdout.
+
+    `repo_root` overrides `settings.repo_root` for this one call, so a single
+    running backend can be pointed at an arbitrary repo per-request rather
+    than only the one it was started against (see `app.repos.resolve_repo_root`).
 
     `entire checkpoint explain --json` deliberately exits non-zero when its
     envelope is `partial`, after already writing the full valid envelope to
@@ -32,7 +37,7 @@ def run_json(args: list[str], allow_nonzero_exit: bool = False) -> dict | list:
     """
     result = subprocess.run(
         [settings.entire_bin, *args, "--json"],
-        cwd=settings.repo_root,
+        cwd=repo_root or settings.repo_root,
         capture_output=True,
         text=True,
         timeout=30,
@@ -56,7 +61,7 @@ def list_checkpoints() -> list[dict]:
     return data
 
 
-def list_pending_checkpoints() -> list[dict]:
+def list_pending_checkpoints(repo_root: Path | None = None) -> list[dict]:
     """Return the pending (live + logs-only) checkpoint dataset.
 
     This is the D-01 dataset: `entire checkpoint list --pending --json`.
@@ -64,7 +69,7 @@ def list_pending_checkpoints() -> list[dict]:
     surfaces shadow-branch checkpoints that have not yet been committed,
     which is what makes "live" ingestion possible.
     """
-    data = run_json(["checkpoint", "list", "--pending"])
+    data = run_json(["checkpoint", "list", "--pending"], repo_root=repo_root)
     if isinstance(data, dict):
         return data.get("checkpoints", [])
     if isinstance(data, list):
@@ -72,13 +77,13 @@ def list_pending_checkpoints() -> list[dict]:
     return []
 
 
-def explain_checkpoint(checkpoint_id: str) -> dict:
+def explain_checkpoint(checkpoint_id: str, repo_root: Path | None = None) -> dict:
     """Fetch the per-checkpoint detail envelope for an already-condensed ID.
 
     Uses `allow_nonzero_exit=True` since a `partial` envelope is still valid
     JSON worth reading (see `run_json`'s docstring).
     """
-    data = run_json(["checkpoint", "explain", checkpoint_id], allow_nonzero_exit=True)
+    data = run_json(["checkpoint", "explain", checkpoint_id], allow_nonzero_exit=True, repo_root=repo_root)
     return data if isinstance(data, dict) else {}
 
 
