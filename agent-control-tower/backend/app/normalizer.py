@@ -13,6 +13,7 @@ predicate rather than re-testing `condensation_id` itself.
 """
 
 import re
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 
 from app import entire_client
@@ -210,33 +211,42 @@ def ingest_checkpoints() -> IngestionResult:
     checkpoints = [normalize_pending_entry(entry) for entry in entries]
 
     notes: list[str] = []
-    enrichment_calls = 0
     overflow_count = 0
-    result_checkpoints: list[Checkpoint] = []
+    # index -> checkpoint to enrich, capped at MAX_ENRICHMENT_CALLS in
+    # encounter order (unchanged cap semantics from the sequential version).
+    to_enrich: dict[int, Checkpoint] = {}
+    result_checkpoints: list[Checkpoint | None] = [None] * len(checkpoints)
 
-    for cp in checkpoints:
+    for i, cp in enumerate(checkpoints):
         if not is_enrichable(cp):
-            result_checkpoints.append(cp)
-            continue
-
-        if enrichment_calls >= MAX_ENRICHMENT_CALLS:
+            result_checkpoints[i] = cp
+        elif len(to_enrich) >= MAX_ENRICHMENT_CALLS:
             overflow_count += 1
-            result_checkpoints.append(cp)
-            continue
+            result_checkpoints[i] = cp
+        else:
+            to_enrich[i] = cp
 
-        enrichment_calls += 1
+    def _enrich_one(item: tuple[int, Checkpoint]) -> tuple[int, Checkpoint]:
+        idx, cp = item
         try:
             envelope = entire_client.explain_checkpoint(cp.condensation_id)
-            result_checkpoints.append(enrich_checkpoint(cp, envelope))
+            return idx, enrich_checkpoint(cp, envelope)
         except EntireCommandError as exc:
-            result_checkpoints.append(
-                cp.model_copy(
-                    update={
-                        "evidence_status": EvidenceStatus.INSUFFICIENT_EVIDENCE,
-                        "evidence_notes": [*cp.evidence_notes, str(exc)],
-                    }
-                )
+            return idx, cp.model_copy(
+                update={
+                    "evidence_status": EvidenceStatus.INSUFFICIENT_EVIDENCE,
+                    "evidence_notes": [*cp.evidence_notes, str(exc)],
+                }
             )
+
+    # Each explain call is a separate `entire` subprocess and mostly waits on
+    # I/O, so running them concurrently (bounded by MAX_ENRICHMENT_CALLS,
+    # already a small cap) turns a route a live dashboard polls from
+    # O(n) sequential subprocess round-trips into one wall-clock round-trip.
+    if to_enrich:
+        with ThreadPoolExecutor(max_workers=len(to_enrich)) as pool:
+            for idx, enriched in pool.map(_enrich_one, to_enrich.items()):
+                result_checkpoints[idx] = enriched
 
     if overflow_count:
         notes.append(
@@ -246,7 +256,7 @@ def ingest_checkpoints() -> IngestionResult:
 
     return IngestionResult(
         status=IngestionStatus.OK,
-        checkpoints=result_checkpoints,
+        checkpoints=[cp for cp in result_checkpoints if cp is not None],
         notes=notes,
         source="entire checkpoint list --pending --json",
     )

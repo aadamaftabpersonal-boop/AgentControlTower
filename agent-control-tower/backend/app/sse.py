@@ -16,7 +16,7 @@ from fastapi.responses import StreamingResponse
 
 from app import normalizer, registry
 
-POLL_INTERVAL_SECONDS = 2.0
+POLL_INTERVAL_SECONDS = 4.0
 
 
 async def _event_generator():
