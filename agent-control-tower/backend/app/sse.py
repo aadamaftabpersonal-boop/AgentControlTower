@@ -43,6 +43,7 @@ async def _event_generator(repo_root: Path | None):
                 agents=reg.agents,
                 checkpoints=result.checkpoints,
                 notes=reg.notes,
+                repo_root=str(repo_root) if repo_root else "",
             )
             new_ids = {cp.checkpoint_id for cp in result.checkpoints if cp.checkpoint_id}
 

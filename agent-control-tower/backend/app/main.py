@@ -47,12 +47,18 @@ def version() -> dict:
 
 @app.get("/api/checkpoints")
 def checkpoints(repo: str | None = RepoParam) -> IngestionResult:
-    return normalizer.ingest_checkpoints(repo_root=_resolve_repo(repo))
+    resolved = _resolve_repo(repo)
+    result = normalizer.ingest_checkpoints(repo_root=resolved)
+    result.repo_root = str(resolved)
+    return result
 
 
 @app.get("/api/agents")
 def agents(repo: str | None = RepoParam) -> AgentRegistryResult:
-    return registry.build_agent_registry(normalizer.ingest_checkpoints(repo_root=_resolve_repo(repo)))
+    resolved = _resolve_repo(repo)
+    reg = registry.build_agent_registry(normalizer.ingest_checkpoints(repo_root=resolved))
+    reg.repo_root = str(resolved)
+    return reg
 
 
 @app.get("/api/events")

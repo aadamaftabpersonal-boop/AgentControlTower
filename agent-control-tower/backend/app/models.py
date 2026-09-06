@@ -90,6 +90,11 @@ class IngestionResult(BaseModel):
     checkpoints: list[Checkpoint] = []
     notes: list[str] = []
     source: str = ""
+    # The absolute, resolved repo directory these checkpoints were actually
+    # read from. Set by the API layer (main.py), never guessed here --
+    # showing this in the UI is what makes "which repo am I looking at"
+    # verifiable instead of trusted on faith.
+    repo_root: str = ""
 
 
 class AgentStatus(str, Enum):
@@ -128,6 +133,7 @@ class AgentRegistryResult(BaseModel):
     status: IngestionStatus
     agents: list[Agent] = []
     notes: list[str] = []
+    repo_root: str = ""
 
 
 class LiveState(BaseModel):
@@ -143,6 +149,7 @@ class LiveState(BaseModel):
     agents: list[Agent] = []
     checkpoints: list[Checkpoint] = []
     notes: list[str] = []
+    repo_root: str = ""
 
 
 class ReconstructionPrompt(BaseModel):

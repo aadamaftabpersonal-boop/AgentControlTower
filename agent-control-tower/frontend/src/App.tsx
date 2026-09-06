@@ -51,6 +51,7 @@ interface LiveState {
   agents: Agent[]
   checkpoints: Checkpoint[]
   notes: string[]
+  repo_root: string
 }
 
 interface ReconstructionPrompt {
@@ -164,7 +165,9 @@ function RepoTargetForm({
       <button type="submit" disabled={loading}>
         {loading ? 'Loading…' : 'Load repo'}
       </button>
-      <span className="active-repo-label">Showing: {activeRepoLabel}</span>
+      <span className="active-repo-label" title="Server-confirmed absolute path — not just what was typed">
+        Reading from: {activeRepoLabel}
+      </span>
     </form>
   )
 }
@@ -422,7 +425,11 @@ function App() {
         </span>
       </header>
 
-      <RepoTargetForm onLoad={handleLoadRepo} loading={repoLoading} activeRepoLabel={repo.trim() || '(this repo)'} />
+      <RepoTargetForm
+        onLoad={handleLoadRepo}
+        loading={repoLoading}
+        activeRepoLabel={live?.repo_root || (connection === 'connecting' ? 'resolving…' : '(unknown)')}
+      />
 
       {repoError && <div className="error-banner">Couldn't load that repo: {repoError}</div>}
       {error && <div className="error-banner">Backend error: {error}</div>}
