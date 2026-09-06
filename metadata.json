@@ -1,0 +1,33 @@
+{
+  "cli_version": "0.0.0-20260906064259-8b30d2726f72+dirty",
+  "checkpoint_id": "01M1TYQTYY68VFG4AG8PEGGPEV",
+  "strategy": "manual-commit",
+  "branch": "main",
+  "checkpoints_count": 4,
+  "files_touched": [
+    "agent-control-tower/backend/app/normalizer.py"
+  ],
+  "sessions": [
+    {
+      "metadata": "/0/metadata.json",
+      "transcript": "/0/full.jsonl",
+      "compact_transcript": "/0/transcript.jsonl",
+      "content_hash": "/0/content_hash.txt",
+      "prompt": "/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 435,
+    "cache_creation_tokens": 927471,
+    "cache_read_tokens": 76697566,
+    "output_tokens": 107808,
+    "api_call_count": 219,
+    "subagent_tokens": {
+      "input_tokens": 268,
+      "cache_creation_tokens": 581669,
+      "cache_read_tokens": 26174804,
+      "output_tokens": 30092,
+      "api_call_count": 134
+    }
+  }
+}
