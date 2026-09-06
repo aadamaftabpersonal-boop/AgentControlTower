@@ -17,7 +17,16 @@ from datetime import datetime
 
 from app import entire_client
 from app.entire_client import EntireCommandError
-from app.models import Checkpoint, EvidenceStatus, DetailLevel, IngestionResult, IngestionStatus, SessionDetail, SessionSummary, TokenUsage
+from app.models import (
+    Checkpoint,
+    DetailLevel,
+    EvidenceStatus,
+    IngestionResult,
+    IngestionStatus,
+    SessionDetail,
+    SessionSummary,
+    TokenUsage,
+)
 
 UNAVAILABLE_FIELDS = ("transcript", "tool_calls", "commits")
 
@@ -101,7 +110,8 @@ def normalize_explain_envelope(
     """Map an explain envelope onto `(files_touched, sessions, evidence_notes)`.
 
     Pure. `evidence_notes` here is the collected per-session `error` strings;
-    Task 3 wires the `partial` flag and this list into `evidence_status`.
+    `enrich_checkpoint` folds them, together with the envelope's `partial`
+    flag, into `evidence_status`.
     """
     files_touched = list(envelope.get("files_touched") or [])
     evidence_notes: list[str] = []
@@ -180,8 +190,9 @@ def ingest_checkpoints() -> IngestionResult:
     `subprocess.TimeoutExpired` raised by `list_pending_checkpoints` are
     deliberately not caught here -- letting them propagate is the deferred
     behaviour, distinct from the two evidence states this function returns
-    explicitly. A per-entry `explain_checkpoint` failure is isolated instead
-    and does not abort the whole ingestion.
+    explicitly (`WAITING_FOR_AGENT_ACTIVITY` and, per-checkpoint,
+    `INSUFFICIENT_EVIDENCE`). A per-entry `explain_checkpoint` failure is
+    isolated instead and does not abort the whole ingestion.
     """
     entries = entire_client.list_pending_checkpoints()
 
