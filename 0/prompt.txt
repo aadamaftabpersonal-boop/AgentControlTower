@@ -11,3 +11,7 @@ the checkpoint data is stored in a seperate branch and hence not accessible from
 ---
 
 run the backend
+
+---
+
+make a function in frontend and backend that takes a repo url/folder as input and shows all the checkpoint of that repo instead of our own
