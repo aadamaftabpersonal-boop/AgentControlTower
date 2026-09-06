@@ -90,3 +90,41 @@ class IngestionResult(BaseModel):
     checkpoints: list[Checkpoint] = []
     notes: list[str] = []
     source: str = ""
+
+
+class AgentStatus(str, Enum):
+    """Placeholder status — real ON TRACK/STUCK/DONE intelligence is V4 (STATUS-01).
+
+    V1 has exactly two states: an agent with at least one checkpoint is ACTIVE;
+    there is no idle/stuck detection yet, so nothing is invented beyond that.
+    """
+
+    ACTIVE = "ACTIVE"
+
+
+class Agent(BaseModel):
+    """Live agent state derived entirely from ingested checkpoints (REGISTRY-02).
+
+    Keyed on session_id (always present on a pending checkpoint); agent_id is
+    an enrichment-derived label, populated only once a checkpoint's explain
+    envelope names an agent, and stays None for list_only-only sessions.
+    """
+
+    agent_id: str | None = None
+    session_id: str
+    name: str | None = None
+    role: str | None = None
+    objective: str | None = None
+    status: AgentStatus = AgentStatus.ACTIVE
+    current_activity: str | None = None
+    current_files: list[str] = []
+    latest_checkpoint_id: str
+    commit_ids: list[str] = []
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
+
+
+class AgentRegistryResult(BaseModel):
+    status: IngestionStatus
+    agents: list[Agent] = []
+    notes: list[str] = []
