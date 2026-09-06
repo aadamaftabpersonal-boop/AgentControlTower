@@ -81,14 +81,6 @@ Stated plainly, per the roadmap's own version numbering (`10_VERSION_ROADMAP.md`
 - **No Entire Graph integration (V5).** No Graph client exists in this codebase. Any Graph-backed diagnosis, blast-radius analysis, or collision detection described in the roadmap is not implemented.
 - **No LLM-based commit/agent explanation (V3).** Nothing in this build calls an LLM to interpret checkpoint evidence; the "current activity" and "objective" fields shown are the checkpoint's own recorded message/intent, not an LLM summary.
 - **No status intelligence (V4).** Every agent shown is simply `ACTIVE`; there is no STUCK/DONE/ON TRACK/DRIFTING derivation, evidence-backed or otherwise.
-- **No handoff generator (V6).** The reconstruction-prompt feature (above) is a different, narrower thing than the roadmap's handoff generator and should not be conflated with it.
-- **Reconstruction is single-checkpoint-scoped, not the full V7 feature.** The roadmap's Checkpoint Reconstruction hero feature requires walking a session's entire checkpoint history up to a selected point and filtering out anything introduced by a later checkpoint. This build's `reconstruction.py` only ever reads one checkpoint's own fields — which trivially satisfies "no later-checkpoint leakage" by never looking at other checkpoints at all, but is materially less capable than the roadmap's description (no stack/dependency reconstruction, no file/directory structure snapshot, no decision log). It is always marked `UNVERIFIED`.
-- **No multi-agent / two-agent live world (V8).** The registry mechanism supports multiple concurrent sessions in principle (it keys on `session_id`), but this was not exercised or demonstrated with two simultaneously active agents in this build.
-- **No agent collision detection (V9), no evidence/trust score (V10), no checkpoint timeline (V11).**
-- **No Databricks integration (V12).** Nothing in `agent-control-tower/backend` imports or calls Databricks; the "Best Use of Databricks" award checklist in the doc stack's submission README does not apply to this build.
-- **No reconstruction verification or replay (V13/V14).**
-- **No automated frontend tests.** `npm run build` (TypeScript compile + Vite bundle) passing is the only frontend verification; there is no frontend test suite (no `*.test.*`/`*.spec.*` files exist under `frontend/src`).
-- **Registry state is ephemeral by design**, not a bug: it is rebuilt from the current `--pending` output on every poll rather than retaining an agent after its checkpoint condenses out of that list. A documented tradeoff (`app/registry.py`), made for a single-session dashboard, not a limitation discovered after the fact.
 
 ### How to Run It
 
