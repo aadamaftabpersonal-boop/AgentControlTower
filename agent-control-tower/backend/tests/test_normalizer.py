@@ -111,6 +111,119 @@ def test_flag_like_condensation_id_never_reaches_explain(monkeypatch):
     assert result.status == IngestionStatus.OK
 
 
+def test_ingest_checkpoints_empty_pending_list_returns_waiting_for_agent_activity(monkeypatch):
+    monkeypatch.setattr(normalizer.entire_client, "list_pending_checkpoints", lambda: [])
+
+    result = ingest_checkpoints()
+
+    assert result.status.value == "WAITING FOR AGENT ACTIVITY"
+    assert result.checkpoints == []
+    assert len(result.notes) >= 1
+
+
+def test_normalize_pending_entry_missing_id_is_insufficient_evidence():
+    entry = {
+        "message": "no id here",
+        "metadata_dir": "",
+        "date": "2026-09-06T00:00:00Z",
+        "is_task_checkpoint": False,
+        "tool_use_id": "",
+        "is_logs_only": False,
+        "condensation_id": "",
+        "session_id": "session-x",
+        "session_prompt": "p",
+    }
+    cp = normalize_pending_entry(entry)
+    assert cp.evidence_status.value == "INSUFFICIENT EVIDENCE"
+    assert any("id" in note for note in cp.evidence_notes)
+
+
+def test_normalize_pending_entry_unparseable_date_keeps_timestamp_none():
+    entry = {
+        "id": "cp-1",
+        "message": "m",
+        "metadata_dir": "",
+        "date": "not-a-date",
+        "is_task_checkpoint": False,
+        "tool_use_id": "",
+        "is_logs_only": False,
+        "condensation_id": "",
+        "session_id": "session-x",
+        "session_prompt": "p",
+    }
+    cp = normalize_pending_entry(entry)
+    assert cp.timestamp is None
+    assert cp.evidence_status.value == "INSUFFICIENT EVIDENCE"
+
+
+def test_partial_explain_envelope_keeps_readable_session_and_flags_evidence():
+    fixture = json.loads((FIXTURES / "explain_partial.json").read_text())
+    cp = normalize_pending_entry(_load_fixture("pending_condensed.json")[1])
+
+    enriched = enrich_checkpoint(cp, fixture)
+
+    assert enriched.evidence_status.value == "INSUFFICIENT EVIDENCE"
+    assert len(enriched.sessions) == 2
+    stub_session = next(s for s in enriched.sessions if s.index == 1)
+    full_session = next(s for s in enriched.sessions if s.index == 0)
+    assert stub_session.error
+    assert full_session.files_touched
+
+
+def test_per_entry_explain_failure_is_isolated(monkeypatch):
+    entries = [
+        {
+            "id": "cp-1",
+            "message": "m1",
+            "metadata_dir": "",
+            "date": "2026-09-06T00:00:00Z",
+            "is_task_checkpoint": False,
+            "tool_use_id": "",
+            "is_logs_only": True,
+            "condensation_id": "cond-1",
+            "session_id": "session-1",
+            "session_prompt": "p1",
+        },
+        {
+            "id": "cp-2",
+            "message": "m2",
+            "metadata_dir": "",
+            "date": "2026-09-06T00:00:00Z",
+            "is_task_checkpoint": False,
+            "tool_use_id": "",
+            "is_logs_only": True,
+            "condensation_id": "cond-2",
+            "session_id": "session-2",
+            "session_prompt": "p2",
+        },
+    ]
+
+    def fake_explain(checkpoint_id):
+        if checkpoint_id == "cond-1":
+            raise EntireCommandError(["checkpoint", "explain", "cond-1"], 1, "boom")
+        return FULL_ENVELOPE
+
+    monkeypatch.setattr(normalizer.entire_client, "list_pending_checkpoints", lambda: entries)
+    monkeypatch.setattr(normalizer.entire_client, "explain_checkpoint", fake_explain)
+
+    result = ingest_checkpoints()
+
+    assert len(result.checkpoints) == 2
+    assert result.status == IngestionStatus.OK
+    insufficient = [c for c in result.checkpoints if c.evidence_status.value == "INSUFFICIENT EVIDENCE"]
+    assert len(insufficient) == 1
+
+
+def test_list_pending_checkpoints_error_propagates(monkeypatch):
+    def raise_error():
+        raise EntireCommandError(["checkpoint", "list", "--pending"], 1, "boom")
+
+    monkeypatch.setattr(normalizer.entire_client, "list_pending_checkpoints", raise_error)
+
+    with pytest.raises(EntireCommandError):
+        ingest_checkpoints()
+
+
 def test_enrichment_cap_leaves_overflow_list_only_with_note(monkeypatch):
     entries = []
     for i in range(normalizer.MAX_ENRICHMENT_CALLS + 2):

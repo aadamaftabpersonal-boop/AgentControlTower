@@ -57,3 +57,14 @@ def test_checkpoints_normalizes_live_pending_entry(monkeypatch):
     assert cp["evidence_status"] == "OK"
     assert cp["condensation_id"] is None
     assert cp["unavailable_fields"] == ["transcript", "tool_calls", "commits"]
+
+
+def test_checkpoints_returns_waiting_for_agent_activity_when_empty(monkeypatch):
+    monkeypatch.setattr(entire_client, "list_pending_checkpoints", lambda: [])
+
+    response = client.get("/api/checkpoints")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["status"] == "WAITING FOR AGENT ACTIVITY"
+    assert body["checkpoints"] == []

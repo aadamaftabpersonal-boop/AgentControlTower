@@ -46,13 +46,25 @@ def _parse_timestamp(value: str | None) -> datetime | None:
 def normalize_pending_entry(entry: dict) -> Checkpoint:
     """Map one raw pending-checkpoint dict onto a `Checkpoint`.
 
-    Pure: no subprocess, no filesystem access. Does not raise on a missing
-    optional field, and does not raise on a missing `id`/`date` either --
-    the evidence-status bookkeeping for those belongs to Task 3's
-    INSUFFICIENT EVIDENCE handling.
+    Pure: no subprocess, no filesystem access. A missing/empty `id` or a
+    missing/empty/unparseable `date` does not raise -- it is recorded as an
+    `INSUFFICIENT_EVIDENCE` note naming the field, and the record is still
+    returned (INGEST-04 forbids silently dropping it). The absent value
+    stays `None`/`""` rather than being defaulted to a stand-in.
     """
     checkpoint_id = entry.get("id") or ""
-    timestamp = _parse_timestamp(entry.get("date"))
+    raw_date = entry.get("date")
+    timestamp = _parse_timestamp(raw_date)
+
+    evidence_notes: list[str] = []
+    if not checkpoint_id:
+        evidence_notes.append("missing or empty required field: id")
+    if not raw_date:
+        evidence_notes.append("missing or empty required field: date")
+    elif timestamp is None:
+        evidence_notes.append(f"unparseable date: {raw_date!r}")
+
+    evidence_status = EvidenceStatus.INSUFFICIENT_EVIDENCE if evidence_notes else EvidenceStatus.OK
 
     return Checkpoint(
         checkpoint_id=checkpoint_id,
@@ -65,6 +77,8 @@ def normalize_pending_entry(entry: dict) -> Checkpoint:
         is_task_checkpoint=bool(entry.get("is_task_checkpoint", False)),
         tool_use_id=entry.get("tool_use_id") or None,
         is_logs_only=bool(entry.get("is_logs_only", False)),
+        evidence_status=evidence_status,
+        evidence_notes=evidence_notes,
         unavailable_fields=list(UNAVAILABLE_FIELDS),
         raw=entry,
     )
@@ -167,9 +181,20 @@ def ingest_checkpoints() -> IngestionResult:
     deliberately not caught here -- letting them propagate is the deferred
     behaviour, distinct from the two evidence states this function returns
     explicitly. A per-entry `explain_checkpoint` failure is isolated instead
-    (Task 3) and does not abort the whole ingestion.
+    and does not abort the whole ingestion.
     """
     entries = entire_client.list_pending_checkpoints()
+
+    if not entries:
+        return IngestionResult(
+            status=IngestionStatus.WAITING_FOR_AGENT_ACTIVITY,
+            checkpoints=[],
+            notes=[
+                "No pending checkpoints found. Pending checkpoints are "
+                "created automatically during active agent sessions."
+            ],
+            source="entire checkpoint list --pending --json",
+        )
 
     checkpoints = [normalize_pending_entry(entry) for entry in entries]
 
