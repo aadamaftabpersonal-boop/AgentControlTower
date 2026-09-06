@@ -17,7 +17,7 @@
 **Plans:** 1 plan
 
 Plans:
-- [ ] 01-01-PLAN.md — Tracer-first ingestion slice: pending checkpoints → normalized `Checkpoint` model → `/api/checkpoints`, with explicit `WAITING FOR AGENT ACTIVITY` / `INSUFFICIENT EVIDENCE` states
+- [x] 01-01-PLAN.md — Tracer-first ingestion slice: pending checkpoints → normalized `Checkpoint` model → `/api/checkpoints`, with explicit `WAITING FOR AGENT ACTIVITY` / `INSUFFICIENT EVIDENCE` states
 
 ## Phase 2: Agent Registry & Read APIs
 **Goal:** Backend maintains live Agent state derived from ingested checkpoints and exposes it over HTTP.
