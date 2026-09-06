@@ -41,6 +41,22 @@ def list_checkpoints() -> list[dict]:
     return data
 
 
+def list_pending_checkpoints() -> list[dict]:
+    """Return the pending (live + logs-only) checkpoint dataset.
+
+    This is the D-01 dataset: `entire checkpoint list --pending --json`.
+    It differs from `list_checkpoints()`'s condensed dataset in that it
+    surfaces shadow-branch checkpoints that have not yet been committed,
+    which is what makes "live" ingestion possible.
+    """
+    data = run_json(["checkpoint", "list", "--pending"])
+    if isinstance(data, dict):
+        return data.get("checkpoints", [])
+    if isinstance(data, list):
+        return data
+    return []
+
+
 def status() -> dict:
     data = run_json(["status"])
     return data if isinstance(data, dict) else {}

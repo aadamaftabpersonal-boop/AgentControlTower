@@ -1,7 +1,8 @@
 from fastapi import FastAPI
 
-from app import entire_client
+from app import entire_client, normalizer
 from app.config import settings
+from app.models import IngestionResult
 
 app = FastAPI(title="Agent Control Tower", version="0.1.0")
 
@@ -20,5 +21,5 @@ def version() -> dict:
 
 
 @app.get("/api/checkpoints")
-def checkpoints() -> list[dict]:
-    return entire_client.list_checkpoints()
+def checkpoints() -> IngestionResult:
+    return normalizer.ingest_checkpoints()
