@@ -1,0 +1,37 @@
+{
+  "cli_version": "0.0.0-20260906064259-8b30d2726f72+dirty",
+  "checkpoint_id": "01M1V05K2CW3C0HDG4V1M0ZH6B",
+  "strategy": "manual-commit",
+  "branch": "main",
+  "checkpoints_count": 3,
+  "files_touched": [
+    "agent-control-tower/backend/app/main.py",
+    "agent-control-tower/backend/app/models.py",
+    "agent-control-tower/backend/app/sse.py",
+    "agent-control-tower/backend/tests/test_repo_isolation.py",
+    "agent-control-tower/frontend/src/App.tsx"
+  ],
+  "sessions": [
+    {
+      "metadata": "/0/metadata.json",
+      "transcript": "/0/full.jsonl",
+      "compact_transcript": "/0/transcript.jsonl",
+      "content_hash": "/0/content_hash.txt",
+      "prompt": "/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 577,
+    "cache_creation_tokens": 998858,
+    "cache_read_tokens": 115005041,
+    "output_tokens": 150310,
+    "api_call_count": 290,
+    "subagent_tokens": {
+      "input_tokens": 10,
+      "cache_creation_tokens": 4407,
+      "cache_read_tokens": 2868639,
+      "output_tokens": 1448,
+      "api_call_count": 5
+    }
+  }
+}

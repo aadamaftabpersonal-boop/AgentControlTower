@@ -1,0 +1,49 @@
+merge all the branches to main
+
+---
+
+can you take context from the other brnaches
+
+---
+
+the checkpoint data is stored in a seperate branch and hence not accessible from main. even if i manually run the entire checkpoint list command they are not showing in main branch
+
+---
+
+run the backend
+
+---
+
+make a function in frontend and backend that takes a repo url/folder as input and shows all the checkpoint of that repo instead of our own
+
+---
+
+push this to github
+
+---
+
+give commads to run this from terminal
+
+---
+
+give commads to run this from terminal, just give commads
+
+---
+
+linux commands pls]
+
+---
+
+continue building the product, theres an error it is showing unkown agents too like claude code and codex are showing but there are unkown agents shown too not an error, add when i click on the checkpoint, it shows the checkpoint summary. also add a feature when i click on a checkpoint it returns a prompt that can recreate the repo upto that checkpoint
+
+---
+
+add when i click on the checkpoint, it shows the checkpoint summary. also add a feature when i click on a checkpoint it returns a prompt that can recreate the repo upto that checkpoint
+
+---
+
+push this to github, make this feature where only show the session activity for the repo i have given not and donot fallback and donot show checkpoints of this repo
+
+---
+
+push the previous changes to github pleaseee
