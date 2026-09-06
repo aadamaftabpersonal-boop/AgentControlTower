@@ -1,0 +1,26 @@
+[
+  {
+    "id": "b7f3a1c9-live-checkpoint-0001",
+    "message": "Implement checkpoint ingestion normalizer",
+    "metadata_dir": ".entire/metadata/session-abc123",
+    "date": "2026-09-06T12:34:56Z",
+    "is_task_checkpoint": false,
+    "tool_use_id": "",
+    "is_logs_only": false,
+    "condensation_id": "",
+    "session_id": "session-abc123",
+    "session_prompt": "Add real checkpoint ingestion for the control tower backend"
+  },
+  {
+    "id": "d4e2b8f6-condensed-checkpoint-0002",
+    "message": "Fix the tier predicate for enrichment",
+    "metadata_dir": ".entire/metadata/session-def456",
+    "date": "2026-09-06T13:10:00Z",
+    "is_task_checkpoint": false,
+    "tool_use_id": "",
+    "is_logs_only": true,
+    "condensation_id": "d4e2b8f6c3a1",
+    "session_id": "session-def456",
+    "session_prompt": "Fix the tier predicate for enrichment"
+  }
+]

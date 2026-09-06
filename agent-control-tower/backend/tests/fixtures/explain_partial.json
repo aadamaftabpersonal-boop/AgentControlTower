@@ -1,0 +1,33 @@
+{
+  "checkpoint_id": "d4e2b8f6c3a1",
+  "checkpoints_count": 2,
+  "files_touched": ["app/normalizer.py"],
+  "session_count": 2,
+  "sessions": [
+    {
+      "index": 0,
+      "session_id": "session-def456",
+      "agent": "claude-code",
+      "model": "claude-sonnet-5",
+      "kind": "code",
+      "created_at": "2026-09-06T13:09:00Z",
+      "is_task": false,
+      "files_touched": ["app/normalizer.py"],
+      "token_usage": {
+        "input_tokens": 120,
+        "output_tokens": 60,
+        "cache_read_tokens": 0,
+        "cache_creation_tokens": 0
+      },
+      "summary": {
+        "intent": "Add the two failure-philosophy states",
+        "outcome": "Implemented WAITING FOR AGENT ACTIVITY and INSUFFICIENT EVIDENCE"
+      }
+    },
+    {
+      "index": 1,
+      "error": "failed to read session metadata: file not found"
+    }
+  ],
+  "partial": true
+}
