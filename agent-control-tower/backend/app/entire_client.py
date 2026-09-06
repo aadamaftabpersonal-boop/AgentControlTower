@@ -20,8 +20,16 @@ class EntireCommandError(RuntimeError):
         self.stderr = stderr
 
 
-def run_json(args: list[str]) -> dict | list:
-    """Run `entire <args...> --json` in the configured repo and decode stdout."""
+def run_json(args: list[str], allow_nonzero_exit: bool = False) -> dict | list:
+    """Run `entire <args...> --json` in the configured repo and decode stdout.
+
+    `entire checkpoint explain --json` deliberately exits non-zero when its
+    envelope is `partial`, after already writing the full valid envelope to
+    stdout -- the CLI's own doc comment says the exit code exists so
+    "automation doesn't mistake incomplete data for a clean export". Passing
+    `allow_nonzero_exit=True` reads that envelope instead of discarding it;
+    it still raises `EntireCommandError` if stdout is empty or undecodable.
+    """
     result = subprocess.run(
         [settings.entire_bin, *args, "--json"],
         cwd=settings.repo_root,
@@ -30,7 +38,14 @@ def run_json(args: list[str]) -> dict | list:
         timeout=30,
     )
     if result.returncode != 0:
-        raise EntireCommandError(args, result.returncode, result.stderr)
+        if not allow_nonzero_exit:
+            raise EntireCommandError(args, result.returncode, result.stderr)
+        if not result.stdout:
+            raise EntireCommandError(args, result.returncode, result.stderr)
+        try:
+            return json.loads(result.stdout)
+        except ValueError as exc:
+            raise EntireCommandError(args, result.returncode, result.stderr) from exc
     return json.loads(result.stdout)
 
 
@@ -55,6 +70,16 @@ def list_pending_checkpoints() -> list[dict]:
     if isinstance(data, list):
         return data
     return []
+
+
+def explain_checkpoint(checkpoint_id: str) -> dict:
+    """Fetch the per-checkpoint detail envelope for an already-condensed ID.
+
+    Uses `allow_nonzero_exit=True` since a `partial` envelope is still valid
+    JSON worth reading (see `run_json`'s docstring).
+    """
+    data = run_json(["checkpoint", "explain", checkpoint_id], allow_nonzero_exit=True)
+    return data if isinstance(data, dict) else {}
 
 
 def status() -> dict:

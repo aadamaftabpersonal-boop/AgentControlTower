@@ -46,3 +46,22 @@ def test_list_pending_checkpoints_invokes_pending_json_args(monkeypatch):
     entire_client.list_pending_checkpoints()
     assert captured["args"][-4:] == ["checkpoint", "list", "--pending", "--json"]
     assert captured["args"][0] == entire_client.settings.entire_bin
+
+
+def test_run_json_allow_nonzero_exit_returns_decoded_stdout(monkeypatch):
+    def fake_run(args, cwd, capture_output, text, timeout):
+        return subprocess.CompletedProcess(args, 1, stdout=json.dumps({"partial": True}), stderr="incomplete")
+
+    monkeypatch.setattr(subprocess, "run", fake_run)
+    assert entire_client.run_json(["checkpoint", "explain", "abc"], allow_nonzero_exit=True) == {
+        "partial": True
+    }
+
+
+def test_run_json_allow_nonzero_exit_raises_on_empty_stdout(monkeypatch):
+    def fake_run(args, cwd, capture_output, text, timeout):
+        return subprocess.CompletedProcess(args, 1, stdout="", stderr="boom")
+
+    monkeypatch.setattr(subprocess, "run", fake_run)
+    with pytest.raises(entire_client.EntireCommandError):
+        entire_client.run_json(["checkpoint", "explain", "abc"], allow_nonzero_exit=True)
